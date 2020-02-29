@@ -11,7 +11,7 @@ This project is currently WORK IN PROGRESS!
 
 Connect a client: `python3 client/main.py [server ip]:[port]`
 
-To host a server, check out [server documentation](server/README.md).
+To host a server, check out [server documentation](server/).
 
 ## Screenshots
 

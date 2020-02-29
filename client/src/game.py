@@ -11,6 +11,8 @@ class Game:
         self.size = (0, 0) # Screen size (h, w)
         self.map = []
 
+        self.picked = False
+
         self.log = ""
 
 
@@ -41,8 +43,9 @@ class Game:
                 message += self.s.recv(1).decode('utf-8')
 
                 if message[-1] == ";":
-                    self.map = json.loads(message[:-1])
-
+                    parsed = json.loads(message[:-1])
+                    self.map = parsed["w"]
+                    self.picked = parsed["b"]
                     message = ""
             except:
                 message = ""
@@ -56,10 +59,7 @@ class Game:
     # Game mechanics & sending data
 
     def move(self, direction):
-        try:
-            self.s.send(bytes(json.dumps({'a': 'm', 'p': direction}) + ";", "utf-8")) # Action: Move, payload: direction
-        except:
-            pass
+        self.s.send(bytes(json.dumps({'a': 'm', 'p': direction}) + ";", "utf-8")) # Action: Move, payload: direction
 
     def shoot(self, direction):
         try:
@@ -67,11 +67,21 @@ class Game:
         except:
             pass
 
+    def pick(self):
+        try:
+            self.s.send(bytes(json.dumps({'a': 'p'}) + ";", "utf-8"))
+        except:
+            pass
+
 
     # Drawing & Curses
 
     def addTexts(self):
-        self.window.addstr(0, 2, f"Text-Worlds-Online v{self.version}")
+        self.window.addstr(0, 2, f" Text-Worlds-Online v{self.version} ")
+        if self.picked:
+            self.window.addstr(self.size[0] + 1, 2, f" Block picked: O ")
+        else:
+            self.window.addstr(self.size[0] + 1, 2, f" Block picked:   ")
 
     def draw(self):
         self.window.erase()
@@ -111,6 +121,9 @@ class Game:
                     self.shoot(2)
                 elif key == curses.KEY_LEFT:
                     self.shoot(3)
+
+                if key == 32: # Space
+                    self.pick()
 
 
             except KeyboardInterrupt:

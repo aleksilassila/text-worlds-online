@@ -5,6 +5,8 @@ class Player:
         self.position = (400, 400) # y / x
         self.health = 5
         self.bullets = []
+        self.facing = 0
+        self.picked_block = None
 
     def disconnect(self):
         self.clientsocket.close()

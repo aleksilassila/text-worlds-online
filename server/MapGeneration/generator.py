@@ -1,10 +1,12 @@
 import noise
+from src.barricade import Barricade
 
 class Generator:
     def __init__(self, width=int, height=int, scale=int):
         self.height = height
         self.width = width
         self.map = []
+        self.barricades = {}
         self.scale = scale
 
     def generateBase(self):
@@ -21,9 +23,7 @@ class Generator:
         for y in range(0, self.height):
             for x in range(0, self.width):
                 if noise.snoise2(x * self.scale * 3, y * self.scale * 3, persistence=.4,lacunarity=4, octaves=3) > 0.5 and not self.map[y][x] == "#":
-                    self.map[y] = list(self.map[y])
-                    self.map[y][x] = "O"
-                    self.map[y] = "".join(self.map[y])
+                    self.barricades[f"{y}{x}"] = Barricade(y, x, f"{y}{x}") # Assign id to each barricade based on initial coordinates
 
     def generateGrass(self):
         for y in range(0, self.height):
@@ -40,8 +40,11 @@ class Generator:
     def getMap(self):
         self.generateBase()
         self.generateGrass()
-        self.generateBarricades()
         return self.map
+
+    def getBarricades(self):
+        self.generateBarricades()
+        return self.barricades
 """
 g = Generator(80, 24, 0.05)
 g.generateBase()
