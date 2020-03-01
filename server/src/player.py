@@ -7,6 +7,7 @@ class Player:
         self.bullets = []
         self.facing = 0
         self.picked_block = None
+        self.level = 0
 
     def disconnect(self):
         self.clientsocket.close()

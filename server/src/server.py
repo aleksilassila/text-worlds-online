@@ -15,14 +15,15 @@ class Server:
         # self.map_json = json.loads(open(args.map, 'r').read())
         # self.map = self.map_json["data"]
 
-        gen = Generator(500, 500, 0.05)
-        self.map = gen.getMap()
-        self.barricades = gen.getBarricades()
+        gen = Generator(500, 500)
+        self.map = [gen.getOverworld(), gen.getUnderworld()]
+        self.barricades = [gen.getBarricades(), gen.getBarricades(underworld=True)]
 
         self.chars = {
             "solids": ["#", "O"],
             "wall": "#",
             "barricade": "O",
+            "teleport": "H",
             "empty": " ",
             "player": "@"
         }
@@ -85,8 +86,14 @@ class Server:
         elif direction == 3:
             next_position = (current_position[0], current_position[1] - 1)
 
-        if not self.getMapTitle(next_position[0], next_position[1]) in self.chars["solids"]:
+        next_block = self.getMapTitle(next_position[0], next_position[1], player.level)
+        if not next_block in self.chars["solids"]:
             player.position = next_position
+            if next_block == self.chars["teleport"]:
+                if player.level == 0: # This code is garbage
+                    player.level = 1
+                else:
+                    player.level = 0
 
         player.facing = direction
 
@@ -101,28 +108,28 @@ class Server:
             title = (player.position[0], player.position[1] - 1)
         
         if player.picked_block:
-            if not self.getMapTitle(title[0], title[1]) in self.chars["solids"]:
+            if not self.getMapTitle(title[0], title[1], player.level) in self.chars["solids"]:
                 player.picked_block.is_picked = False
                 player.picked_block.position = (title[0], title[1])
 
                 # Update barricades list key with the new correct one based on new position
-                self.barricades[f"{title[0]}{title[1]}"] = self.barricades.pop(player.picked_block.barricade_id)
-                self.barricades[f"{title[0]}{title[1]}"].barricade_id = f"{title[0]}{title[1]}"
+                self.barricades[player.level][f"{title[0]}{title[1]}"] = self.barricades[player.level].pop(player.picked_block.barricade_id)
+                self.barricades[player.level][f"{title[0]}{title[1]}"].barricade_id = f"{title[0]}{title[1]}"
 
                 player.picked_block = None
 
-        elif self.getMapTitle(title[0], title[1]) == self.chars["barricade"]:
-            b = self.barricades[f"{title[0]}{title[1]}"]
+        elif self.getMapTitle(title[0], title[1], player.level) == self.chars["barricade"]:
+            b = self.barricades[player.level][f"{title[0]}{title[1]}"]
             b.is_picked = True
             player.picked_block = b
 
-    def getMapTitle(self, y, x):
-        if 0 <= y <= (len(self.map) - 1) and 0 <= x <= (len(self.map[0]) - 1):
-            if f"{y}{x}" in self.barricades and \
-               not self.barricades[f"{y}{x}"].is_picked:
+    def getMapTitle(self, y, x, level):
+        if 0 <= y <= (len(self.map[level]) - 1) and 0 <= x <= (len(self.map[level][0]) - 1):
+            if f"{y}{x}" in self.barricades[level] and \
+               not self.barricades[level][f"{y}{x}"].is_picked:
                 return self.chars["barricade"]
             else:
-                return self.map[y][x]
+                return self.map[level][y][x]
         else:
             return None
 
@@ -130,8 +137,8 @@ class Server:
     def getWindow(self, current_player):
         window = []
 
-        max_y_index = len(self.map) - 1
-        max_x_index = len(self.map[0]) - 1
+        max_y_index = len(self.map[current_player.level]) - 1
+        max_x_index = len(self.map[current_player.level][0]) - 1
 
         if current_player.position[0] + (math.ceil(self.windowSize[0]/2)) > max_y_index:
             start_y = max_y_index - self.windowSize[0]
@@ -152,12 +159,12 @@ class Server:
 
         # Render map rows
         for row in range(start_title[0], start_title[0] + self.windowSize[0]):
-            window.append(list(self.map[row][start_title[1]:(start_title[1] + self.windowSize[1])]))
+            window.append(self.map[current_player.level][row][start_title[1]:(start_title[1] + self.windowSize[1])])
 
         try: # These may be changed during iteration by other threads, thats why try
             # Render barricades
-            for barricade in self.barricades:
-                barricade_object = self.barricades[barricade]
+            for barricade in self.barricades[current_player.level]:
+                barricade_object = self.barricades[current_player.level][barricade]
                 # Check if barricade is in visible window
                 if start_title[0] <= barricade_object.position[0] < (start_title[0] + self.windowSize[0]) and \
                    start_title[1] <= barricade_object.position[1] < (start_title[1] + self.windowSize[1]) and \
@@ -184,8 +191,9 @@ class Server:
     def updateClients(self):
         # try:
         for player in self.players:
-            self.players[player].clientsocket.send(bytes(json.dumps(
-                {"w": self.getWindow(self.players[player]), "b": self.players[player].picked_block != None}
+            player_object = self.players[player]
+            player_object.clientsocket.send(bytes(json.dumps(
+                {"w": self.getWindow(player_object), "b": player_object.picked_block != None, "l": player_object.level}
             ) + ";", "utf-8"))
         # except:
         #     pass

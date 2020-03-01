@@ -12,6 +12,7 @@ class Game:
         self.map = []
 
         self.picked = False
+        self.level = 0
 
         self.log = ""
 
@@ -46,6 +47,7 @@ class Game:
                     parsed = json.loads(message[:-1])
                     self.map = parsed["w"]
                     self.picked = parsed["b"]
+                    self.level = parsed["l"]
                     message = ""
             except:
                 message = ""
@@ -81,7 +83,10 @@ class Game:
         if self.picked:
             self.window.addstr(self.size[0] + 1, 2, f" Block picked: O ")
         else:
-            self.window.addstr(self.size[0] + 1, 2, f" Block picked:   ")
+            self.window.addstr(self.size[0] + 1, 2, f" Block picked: ──")
+        
+        self.window.addstr(self.size[0] + 1, 20, f" Level: {self.level} ")
+
 
     def draw(self):
         self.window.erase()
