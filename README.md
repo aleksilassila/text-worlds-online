@@ -15,4 +15,5 @@ To host a server, check out [server documentation](server/).
 
 ## Screenshots
 
+![](gif-v0.3.gif?raw=true "Underworlds huh? Also updated procedural map generation.")
 ![](screenshot-v0.3.png?raw=true "Underworlds huh? Also updated procedural map generation.")
