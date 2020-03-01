@@ -1,6 +1,6 @@
 # Text Worlds Online
 
-Explore procedurally generated maps with other players, build bases (?) and fight others in your terminal!
+Explore procedurally generated maps with other players, build bases and fight others in your terminal!
 
 My latest project, a text-based game created with python curses library. Supports multiplayer and custom procedural map generation using simplex noise. Note that curses library does not have Windows version. To play on Windows you need virtual machine or linux subsystem.
 
@@ -15,4 +15,4 @@ To host a server, check out [server documentation](server/).
 
 ## Screenshots
 
-![](screenshot-v1.0.png?raw=true "Procedurally generated maps")
+![](screenshot-v0.3.png?raw=true "Underworlds huh? Also updated procedural map generation.")

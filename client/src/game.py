@@ -4,7 +4,7 @@ from threading import Thread
 
 class Game:
     def __init__(self, address):
-        self.version = "0.2"
+        self.version = "0.3"
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.address = address
 
