@@ -2,16 +2,25 @@ import noise
 from src.barricade import Barricade
 
 class Generator:
-    def __init__(self, width=int, height=int):
+    def __init__(self, width=int, height=int, offset=int):
         self.height = height
         self.width = width
         self.overworld = []
         self.underworld = []
+        self.offset = offset
+
+        self.tpc = { # Teleport config
+            "s": -0.5,
+            "sc": 0.02,
+            "o": 5,
+            "p": 1,
+            "c": "H"
+        }
 
     def getOverworld(self):
         self.overworld = self.generateHeights(sensitivity=0.3, scale=0.02, octaves=2, persistence=1)
         grass = self.generateDepths(sensitivity=-0.1, scale=0.02, octaves=2, persistence=1)
-        teleports = self.generateDepths(sensitivity=-0.5, scale=0.02, octaves=5, persistence=1, char="H") 
+        teleports = self.generateDepths(sensitivity=self.tpc["s"], scale=self.tpc["sc"], octaves=self.tpc["o"], persistence=self.tpc["p"], char=self.tpc["c"]) 
 
         # Merge layers
         for y in range(0, self.height):
@@ -24,13 +33,17 @@ class Generator:
         return self.overworld
 
     def getUnderworld(self):
-        self.underworld = self.generateHeights(sensitivity=0, scale=0.02, octaves=2, persistence=1)
-        grass = self.generateDepths(sensitivity=-0.3, scale=0.02, octaves=2, persistence=1, char="_")
-        teleports = self.generateDepths(sensitivity=-0.5, scale=0.02, octaves=5, persistence=1, char="H") 
+        self.underworld = self.generateHeights(sensitivity=-0.2, scale=0.02, octaves=2, persistence=1)
+        caves = self.generateHeights(sensitivity=-0.3, octaves=2, scale=0.03)
+        grass = self.generateDepths(sensitivity=-0.4, scale=0.02, octaves=2, persistence=1, char="_")
+        teleports = self.generateDepths(sensitivity=self.tpc["s"], scale=self.tpc["sc"], octaves=self.tpc["o"], persistence=self.tpc["p"], char=self.tpc["c"]) 
 
         # Merge layers
         for y in range(0, self.height):
             for x in range(0, self.width):
+                if caves[y][x] == " ":
+                    self.underworld[y][x] = " "
+
                 if teleports[y][x] == "H":
                     self.underworld[y][x] = "H"
                 elif grass[y][x] == "_":
@@ -46,10 +59,10 @@ class Generator:
                 if noise.snoise2(x * scale * 3, y * scale * 3, persistence=persistence,lacunarity=lacunarity, octaves=octaves) > sensitivity:
                     if not underworld: # Generate for overworld
                         if not self.overworld[y][x] in ["#", "H"]:
-                            barricades[f"{y}{x}"] = Barricade(y, x, f"{y}{x}") # Assign id to each barricade based on initial coordinates
+                            barricades[f"{y}/{x}"] = Barricade(y, x, f"{y}/{x}", 0) # Assign id to each barricade based on initial coordinates
                     else: # Generate for underworld
                         if not self.underworld[y][x] in ["#", "H"]:
-                            barricades[f"{y}{x}"] = Barricade(y, x, f"{y}{x}") # Assign id to each barricade based on initial coordinates
+                            barricades[f"{y}/{x}"] = Barricade(y, x, f"{y}/{x}", 1) # Assign id to each barricade based on initial coordinates
 
         return barricades
 
@@ -60,7 +73,7 @@ class Generator:
             noiseMap.append([])
 
             for x in range(0, self.width):
-                if noise.snoise2(x * scale, y * scale, persistence=persistence,lacunarity=lacunarity, octaves=octaves) > sensitivity:
+                if noise.snoise2(x * scale + (self.offset * 10), y * scale + (self.offset * 10), persistence=persistence,lacunarity=lacunarity, octaves=octaves) > sensitivity:
                     noiseMap[y].append(char)
                 else:
                     noiseMap[y].append(" ")
@@ -74,7 +87,7 @@ class Generator:
             noiseMap.append([])
 
             for x in range(0, self.width):
-                if noise.snoise2(x * scale, y * scale, persistence=persistence,lacunarity=lacunarity, octaves=octaves) < sensitivity:
+                if noise.snoise2(x * scale + (self.offset * 10), y * scale + (self.offset * 10), persistence=persistence,lacunarity=lacunarity, octaves=octaves) < sensitivity:
                     noiseMap[y].append(char)
                 else:
                     noiseMap[y].append(" ")
@@ -101,17 +114,14 @@ class Generator:
             print(noiseMap[line])
 """
 from MapGeneration.generator import Generator
-g = Generator(240, 80, 0.05)
+g = Generator(240, 80, -300)
 g.test()
 
 For caves
+g.test(s=-0.3, o=2, sc=0.03)
+For underworld
 g.test(s=0, sc=0.02, o=2, p=1)
 For overworld
 g.test(s=3, sc=0.02, o=2, p=1)
 
-from MapGeneration.generator import Generator
-g = Generator(80, 24, 0.05)
-g.generateBase()
-g.generateGrass()
-g.printMap()
 """
